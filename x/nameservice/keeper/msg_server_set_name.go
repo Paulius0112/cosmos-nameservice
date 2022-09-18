@@ -10,22 +10,26 @@ import (
 )
 
 func (k msgServer) SetName(goCtx context.Context, msg *types.MsgSetName) (*types.MsgSetNameResponse, error) {
-	ctx := sdk.UnwrapSDKContext(goCtx)
+    ctx := sdk.UnwrapSDKContext(goCtx)
 
-	whois, _ := k.GetWhois(ctx, msg.Name)
+    // Try getting name information from the store
+    whois, _ := k.GetWhois(ctx, msg.Name)
 
-	if !(msg.Creator == whois.Owner) {
-		return nil, sdkerrors.Wrap(sdkerrors.ErrUnauthorized, "Incorrent owner")
-	}
+    // If the message sender address doesn't match the name owner, throw an error
+    if !(msg.Creator == whois.Owner) {
+        return nil, sdkerrors.Wrap(sdkerrors.ErrUnauthorized, "Incorrect Owner")
+    }
 
-	newWhoIs := types.Whois{
-		Index:   msg.Name,
+    // Otherwise, create an updated whois record
+    newWhois := types.Whois{
+        Index:   msg.Name,
         Name:    msg.Name,
         Value:   msg.Value,
         Owner:   whois.Owner,
         Price:   whois.Price,
-	}
+    }
 
-	k.SetWhois(ctx, newWhoIs)
-	return &types.MsgSetNameResponse{}, nil
+    // Write whois information to the store
+    k.SetWhois(ctx, newWhois)
+    return &types.MsgSetNameResponse{}, nil
 }
